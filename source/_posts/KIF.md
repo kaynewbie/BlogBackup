@@ -2,16 +2,18 @@
   
 >  **原文地址：**[https://github.com/kif-framework/KIF](https://github.com/kif-framework/KIF).  
 >  **KIF文档地址：**[http://cocoadocs.org/docsets/KIF/2.0.0/index.html](http://cocoadocs.org/docsets/KIF/2.0.0/index.html)
-
+<!-- more -->
 
 ## 1.KIF介绍
 * 关键类： **KIFTestCase**是**XCTestCase**的子类、**KIFUITestActor**
-* 主要方法： 
-		* case类:`beforeEach`, `afterEach`, `testXXXX`;
-		* actor类:`tapViewWithAccessibilityLabel:`,`waitForViewWithAccessibilityLabel:`,
-		在代码中设置:`setAccessibilityLabel:`,`setIsAccessibilityElement:`;
-		switch:`setOn: forSwitchWithAccessibilityLabel:`		  
-<!-- more -->
+* 主要方法：     
+
+```  
+case类: beforeEach, afterEach, testXXXX;
+actor类: tapViewWithAccessibilityLabel:, waitForViewWithAccessibilityLabel:,
+在代码中设置: setAccessibilityLabel:, setIsAccessibilityElement:;
+switch: setOn: forSwitchWithAccessibilityLabel:  
+```		    
 
 ## 2.KIF集成（使用cocoapods）
 
