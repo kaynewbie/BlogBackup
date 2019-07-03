@@ -1,27 +1,26 @@
 # Runtime  
 
-*	简称运行时，是系统在运行时候的一些机制，其中最主要的是消息机制。
-
-*	`[obj someMethod]`  --> `objc_msgSend(obj, @selector(someMethod))`
+简称运行时，是系统在运行时候的一些机制，其中最主要的是消息机制。
+`[obj someMethod]`  --> `objc_msgSend(obj, @selector(someMethod))`
 
 <!-- more -->
 
 ### 相关问题
 
-1.	头文件
-	*	runtime
-2.	用在哪里
-	*	NSCoding(归档解档， 利用runtime遍历模型对象的所有属性)
-	*	字典 -> 模型， (利用runtime遍历模型所有的属性，根据属性名从字典中取出对应的值，设置到模型的属性上)
-	*	KVO(动态产生一个类)
-	*	用于封装框架
+1.头文件
+	*runtime
+2.用在哪里
+	*NSCoding(归档解档， 利用runtime遍历模型对象的所有属性)
+	*字典 -> 模型， (利用runtime遍历模型所有的属性，根据属性名从字典中取出对应的值，设置到模型的属性上)
+	*KVO(动态产生一个类)
+	*用于封装框架
 3.	相关函数
-	*	objc_msgSend	消息机制
-	*	class_copyMethodList	遍历类的所有方法
-	*	class)copyIvarList		遍历某个类的所有成员变量
+	*objc_msgSend	消息机制
+	*class_copyMethodList	遍历类的所有方法
+	*class)copyIvarList		遍历某个类的所有成员变量
 4.	必备常识
-	*	Ivar : 成员变量
-	*	Method : 成员方法
+	*Ivar : 成员变量
+	*Method : 成员方法
 	
 ***
 	
@@ -74,17 +73,17 @@ In the modern runtime, if you change the layout of instance variables in a class
 此外，modern 自动合成实例变量。	
 
 ## Messaging
-*	消息表达式如何转成 objc_msgSend； 
-*	如何根据方法名引用方法；
-*	解释如何利用 objc_msgSend；
-*	并且如果需要，可以实现规避动态绑定。	
+*消息表达式如何转成 objc_msgSend； 
+*如何根据方法名引用方法；
+*解释如何利用 objc_msgSend；
+*并且如果需要，可以实现规避动态绑定。	
 
 只有在运行时，消息才会绑定方法的实现	
 [reciever message] -> objc_msgSend(receiver, selector)	
 消息传递的关键依赖类和对象的结构体，每个类结构体包含两个基本要素：
 
-*	指向父类的指针；
-*	类的调度表。这个表包含一些实体，实体关联方法的选择器和类指定的这些方法的地址。
+*指向父类的指针；
+*类的调度表。这个表包含一些实体，实体关联方法的选择器和类指定的这些方法的地址。
 
 当一个对象创建的时候，其内存也会创建。还有实例变量也会初始化。所有这些变量中，首先是指向父类结构体的指针，这个指针叫做**isa**，使这个对象访问到他的类。		
 消息发送就是在运行时绑定方法实现的。	
@@ -92,8 +91,8 @@ In the modern runtime, if you change the layout of instance variables in a class
 ### Using Hidden Arguments
 objc_msgSned 找到方法实现的时候，就传递参数过去，另外还有两个隐藏参数:
 
-*	接收对象；
-*	方法的选择器
+*接收对象；
+*方法的选择器
 
 ### Getting a Method Address
 唯一的方法规避动态绑定：获取方法的地址，将其当作一个函数一样直接调用。这种用法在一些少有的情况是合适的，一个方法要接连使用很多次，你想避免执行方法时，过度地消息发送。	
