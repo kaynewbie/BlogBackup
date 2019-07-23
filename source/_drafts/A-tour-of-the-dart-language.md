@@ -24,7 +24,7 @@ tags: dart, flutter
   - [6.2 main() 函数](#62-main-%e5%87%bd%e6%95%b0)
   - [6.3 一等公民函数](#63-%e4%b8%80%e7%ad%89%e5%85%ac%e6%b0%91%e5%87%bd%e6%95%b0)
   - [6.4 匿名函数](#64-%e5%8c%bf%e5%90%8d%e5%87%bd%e6%95%b0)
-  - [6.5 词法作用域](#65-%e8%af%8d%e6%b3%95%e4%bd%9c%e7%94%a8%e5%9f%9f)
+  - [6.5 作用域](#65-%e4%bd%9c%e7%94%a8%e5%9f%9f)
   - [6.6 词法闭包](#66-%e8%af%8d%e6%b3%95%e9%97%ad%e5%8c%85)
   - [6.7 函数的等价性](#67-%e5%87%bd%e6%95%b0%e7%9a%84%e7%ad%89%e4%bb%b7%e6%80%a7)
   - [6.8 返回值](#68-%e8%bf%94%e5%9b%9e%e5%80%bc)
@@ -728,29 +728,449 @@ void doStuff(
 ```
 
 ### 6.2 main() 函数
+
+每个应用都有一个顶层的 `main()` 函数作为程序入口。该函数返回值为 `void` 并且有一个可选参数，类型为 `List<String>`。
+
+Web 程序的 `main()` 函数例子：
+```Dart
+void main() {
+  querySelector('#sample_text_id');
+    ..text = 'Click me!';
+    ..onClick.listen(reverseText);
+}
+```
+
+命令行程序的 `main()` 函数例子：
+```Dart
+// Run the app like this: dart args.dart 1 test
+void main(List<String> arguments) {
+  print(arguments);
+
+  assert(arguments.length == 2);
+  assert(int.parse(arguments[0]) == 1);
+  assert(arguments[1] == 'test');
+}
+```
+
+用 *args library* 库定义并解析命令行参数。
+
 ### 6.3 一等公民函数
+
+函数可以作为其它函数的参数，比如：
+```Dart
+void printElement(int element) {
+  print(element);
+}
+
+var list = [1, 2, 3];
+
+// Pass printElement as aparameter.
+list.forEach(printElement);
+```
+
+函数也可以存到变量中，比如：
+```Dart
+var loudify = (msg) => '!!! ${msg.toUpperCase()}!!!';
+assert(loudify('hello') == '!!!HELLO!!!');
+```
+上面使用了匿名函数。
+
 ### 6.4 匿名函数
-### 6.5 词法作用域
+
+大多函数都有名字，比如 `main()` 和 `printElement()`，一些没有名字的函数叫做 *匿名函数(Anonymous funstions)*、*lambda* 或 *闭包(closure)*。函数存到变量中，可以被添加到集合中或者被移除。
+
+匿名函数和一般函数类似，0个或多个参数，参数间用逗号隔开，支持可选类型标注，参数用 `()` 包含。
+
+匿名函数如下：
+```Dart
+([Type] param1[, ...]) {
+  codeBlock;
+}
+```
+
+以下例子定义一个匿名函数，函数携带一个未定义类型的参数 `item`。每遍历一个 list 中元素，函数都会被调用一次，并打印对应元素的信息。
+```Dart
+var list = ['apples', 'bananas', 'oranges'];
+list.forEach((item) {
+  print('${list.indexOf(item)}: $item');
+});
+```
+
+匿名函数也可以简写成箭头函数。
+```Dart
+list.forEach((item) => print('${list.indexOf(item)}: $item'));
+```
+
+### 6.5 作用域 
+
+Dart 是一种 *lexically scoped language*。代码的布局决定了变量的作用域。
+
+以下例子展示了嵌套函数的变量作用域：
+```Dart
+bool topLevel = true;
+
+void main() {
+  var insideMain = true;
+
+  void myFunction() {
+    var insideFunction = true;
+
+    void nestedFunction() {
+      var insideNestedFunction = true;
+
+      assert(topLevel);
+      assert(insideMain);
+      assert(insideFunction);
+      assert(insideNestedFunction);
+    }
+  }
+}
+```
+
 ### 6.6 词法闭包
+
+*闭包* 是函数，能访问作用域内的变量，即使该闭包在原来作用域外部被使用。
+
+函数能延长变量的生命周期。以下例子中，`makeAdder()` 捕获变量 `addBy`。当函数执行结束，`addBy` 被保存到函数中。
+```Dart
+/// Returns a function that adds [addBy] to the
+/// function's argument.
+Function makeAdder(num addBy) {
+  return (num i) => addBy + i;
+}
+
+void main() {
+  // Create a function that adds 2.
+  var add2 = makeAdder(2);
+
+  // Create a function that adds 4.
+  var add4 = makeAdder(4);
+
+  assert(add2(3) == 5);
+  assert(add4(3) == 7);
+}
+```
+
 ### 6.7 函数的等价性
+
+以下例子中，比较了顶层函数，静态方法和实例方法的等价性:
+```Dart
+void foo() {}
+
+class A {
+  static void bar() {}
+  void baz() {}
+}
+
+void main() {
+  var x;
+
+  // Comparing top-level functions.
+  x = foo;
+  print(foo == x);
+
+  // Comparing static methods.
+  x = A.bar;
+  print(A.bar == x);
+
+  // Comparing instance methods.
+  var v = A();
+  var w = A();
+  var y = w;
+  x = w.baz;
+
+  print(y.baz == x);
+
+  print(v.baz != w.baz);
+}
+```Dart
+
 ### 6.8 返回值
+
+所有函数都有返回值。如果没有显示指定，会默认在函数体最后加上 `return null`。
+```Dart
+foo() {}
+print(foo() == null);
+```
+
 ## 7. 运算符
+
+|          描述          |                    运算符                     |
+| :--------------------: | :-------------------------------------------: |
+|     一元后缀运算符     |      `expr++`, `expr--`, `()`, `.`, `?.`      |
+|     一元前缀运算符     | `-expr`, `!expr`, `~expr`, `++expr`, `--expr` |
+| 乘法（multiplicative） |              `*`, `/`, `%`, `~/`              |
+|          加法          |                   `+`, `-`                    |
+|          位移          |               `<<`, `>>`, `>>>`               |
+|          位与          |                      `&`                      |
+|         位异或         |                      `^`                      |
+|          位或          |                      `|`                      |
+|   关系运算和类型推断   |    `>=`, `<=`, `>`, `<`, `as`, `is`, `is!`    |
+|          等价          |                  `==`, `!=`                   |
+|         逻辑与         |                     `&&`                      |
+|         逻辑或         |                     `||`                      |
+|        可选判断        |                     `??`                      |
+|          条件          |            `expr1 ? expr2 : expr3`            |
+|          多级          |                     `..`                      |
+|          赋值          | `=`, `*=`, `/=`, `+=`, `-=`, `&=`, `^=`, etc  |
+
+运算符使用例子：
+```Dart
+a++
+a + b
+a = b
+a == b
+c ? a : b
+a is T
+```
+
+上述表中的运算符优先从高到底排列。运算符优先级的作用：
+```Dart
+if ((n % i == 0) && (d % i ) == 0) ...
+if (n % i == 0 && d % i == 0) ...
+```
+
 ### 7.1 算数运算符
+
+Dart 支持的算术运算符：
+|  运算符 | 意义 |
+| ------: | :--- |
+|     `+` | 加   |
+|     `-` | 减   |
+| `-expr` | 负号 |
+|     `*` | 乘   |
+|     `/` | 除   |
+|    `~/` | 取商 |
+|     `%` | 取模 |
+
+Dart 支持的递增/递减运算符：
+| 运算符  |                  意义                   |
+| :-----: | :-------------------------------------: |
+| `++var` |  `var = var + 1`(表达式的值是加后的值)  |
+| `var++` | `var = var + 1`（表达式的值是加前的值） |
+| `--var` | `var = var - 1`（表达式的值是减后的值） |
+| `var--` | `var = var - 1`（表达式的值是减前的值） |
+
 ### 7.2 关系运算法
+
+| 运算符 |   意义   |
+| :----: | :------: |
+|  `==`  |   相等   |
+|  `!=`  |   不等   |
+|  `>`   |   大于   |
+|  `<`   |   小于   |
+|  `>=`  | 大于等于 |
+|  `<=`  | 小于等于 |
+
 ### 7.3 类型推断运算符
+
+运行时用于类型校验：
+| 运算符 |               意义               |
+| :----: | :------------------------------: |
+|  `as`  | 类型推断(类型推断错误会抛出异常) |
+|  `is`  |    对象是指定类型时返回 true     |
+| `is!`  |   对象不是指定类型时返回 true    |
+
 ### 7.4 赋值运算符
+
+|      |      |       |       |       |      |
+| ---- | ---- | ----- | ----- | ----- | ---- |
+| `=`  | `-=` | `/=`  | `%\`  | `>>=` | `^=` |
+| `+=` | `*=` | `~/=` | `<<=` | `&=`  | `|=` |
+
+|       | 联合赋值  | 等价表达式  |
+| :---: | :-------: | :---------: |
+|  op   | `a op= b` | `a= a op b` |
+| 例子  | `a += b`  | `a = a + b` |
+
 ### 7.5 逻辑运算符
+
+| 运算符  |  意义  |
+| :-----: | :----: |
+| `!expr` | 逻辑非 |
+|  `||`   | 逻辑或 |
+|  `&&`   | 逻辑与 |
+
 ### 7.6 位移运算符
+
+| 运算符  |            意义            |
+| :-----: | :------------------------: |
+|   `&`   |            位与            |
+|   `|`   |            位或            |
+|   `^`   | 位异或（相同为0，不同为1） |
+| `~expr` |    位取反（0->1, 1->0）    |
+|  `<<`   |          左移一位          |
+|  `>>`   |          右移一位          |
+
 ### 7.7 条件表达式
+
+Dart 支持两个条件表达式：
+
+`condition ? expr1 : expr2`<br>
+如果条件为真，执行表达式1并返回结果；否则，执行表达式2并返回结果。
+
+`expr1 ?? expr2`<br>
+如果表达式1非空，返回其值；否则，执行表达式2并返回结果。
+
 ### 7.8 多级表示法
+
+连续调用相同对象，使用 `..` 可以简化写法，减少使用临时变量。
+```Dart
+querySelector('#confirm')
+  ..text = 'Confirm'
+  ..classes.add('important')
+  ..onClick.listen((e) => window.alert('Confirm!'));
+
+// 等价于以下写法
+var button = querySelector('#confirm');
+button.text = 'Confirm';
+button.classes.add('important');
+button.onClick.listen((e) => window.alert('Confirmed!'));
+```
+
+嵌套写法：
+```Dart
+final addressBook = (
+  AddressBookBuilder()
+    ..name = 'jenny'
+    ..email = 'jenny@example.com'
+    ..phone = (
+      PhoneNumberBuilder()
+        ..number = 'xxx-xxx-xxxx'
+        ..label = 'home'
+      .build();
+    )
+  .build();
+)
+```
+
 ### 7.9 其它
+
+其他运算符：
+| 运算符 |         名字         |                  意义                   |
+| :----: | :------------------: | :-------------------------------------: |
+|  `()`  | Function application |              表示调用函数               |
+|  `[]`  |       访问数组       |      引用数组指定索引位置上的元素       |
+|  `.`   |     访问成员变量     |             表达式访问属性              |
+|  `?.`  |   条件访问成员变量   | 类似 `.`，支持空对象(类似 Swift 可选链) |
+
 ## 8. 控制语句
+
+Dart 控制流：
+* `if else`
+* `switch case`
+* `while` & `do-while`
+* `break` & `continue`
+* `for` 循环
+* `assert`
+
+另外，还有 `try-catch` 和 `throw`。
+
 ### 8.1 If else
+
+```Dart
+if (isRaining()) {
+  you.bringRainCoat();
+} else if (isSnowing()) {
+  you.wearJacket();
+} else {
+  car.putTopDown();
+}
+```
+
+不同于 JS 的地方， Dart 条件必须是布尔值。
+
 ### 8.2 For 循环
+
+```Dart
+var msg = StringBuffer('Dart is fun');
+for (var i = 0; i < 5; i++) {
+  msg.write('!');
+}
+```
+
+闭包捕获变量，并在内部拷贝，即使 `i` 改变也不会影响之前的值： 
+```Dart
+var callbacks = [];
+for (var i = 0; i< 2; i++) {
+  callbacks.append(() => print(i));
+}
+callbacks.forEach((c) => c()); // Dart 输出 0, 1； JS 输出 2, 2
+```
+
 ### 8.3 While & do-while
+
+`while` 在进入循环体之前判断条件：
+```Dart
+while (!isDone()) {
+  doSomething();
+}
+```
+
+`do-while` 先执行循环体再判断条件：
+```Dart
+do {
+  printLine();
+} while(!atEndOfPage())
+```
+
 ### 8.4 Break & continue
+
+* `break` 跳出循环
+* `continue` 跳过当前循环
+
 ### 8.5 Switch case
+
+Dart switch 支持整型，字符串和编译期常量。对象必须是相同类型且该类没有重载 `==`。
+
+每个非空的 `case` 从句，必须要有 `break`。其他结束 `case` 的语句：`continue`, `return` 和 `throw`。
+
+非空的 `case` 中省略 `break` 会报编译错误：
+```Dart
+var command = 'OPEN';
+switch (command) {
+  case 'OPEN':
+  executeOpen();
+  // Error: Missing break
+  case 'CLOSE':
+  executeClose();
+  break;
+}
+```
+
+`case` 可以为空：
+```Dart
+var command = 'OPEN';
+switch (command) {
+  case 'OPEN':
+  case 'NOW_CLOSED':
+  executeNowClosed();
+  break;
+}
+```
+
+Dart 支持 `continue` 加标签的方式控制代码执行：
+```Dart
+var command = 'CLOSED';
+switch (command) {
+  case 'CLOSED':
+    executeClosed();
+    continue nowClosed;
+  // Continues executing at the nowClosed label.
+
+  nowClosed:
+  case 'NOW_CLOSED':
+    // Runs for both CLOSED and NOW_CLOSED.
+    executeNowClosed();
+    break;
+}
+```
+`case` 内部可以定义局部变量，变量作用域仅限此代码块。
+
 ### 8.6 断言
+
+开发者模式下，支持 `assert(condition, optionalMessage)` 终止程序。
+
 ## 9. 异常处理
 ### 9.1 Throw
 ### 9.2 Catch
