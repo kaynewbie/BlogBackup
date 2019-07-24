@@ -59,7 +59,7 @@ tags: dart, flutter
   - [10.7 抽象类](#107-%e6%8a%bd%e8%b1%a1%e7%b1%bb)
   - [10.8 隐式接口](#108-%e9%9a%90%e5%bc%8f%e6%8e%a5%e5%8f%a3)
   - [10.9 扩展类](#109-%e6%89%a9%e5%b1%95%e7%b1%bb)
-  - [10.10 类型的枚举](#1010-%e7%b1%bb%e5%9e%8b%e7%9a%84%e6%9e%9a%e4%b8%be)
+  - [10.10 枚举类型](#1010-%e6%9e%9a%e4%b8%be%e7%b1%bb%e5%9e%8b)
   - [10.11 类添加特性](#1011-%e7%b1%bb%e6%b7%bb%e5%8a%a0%e7%89%b9%e6%80%a7)
   - [10.12 类变量和方法](#1012-%e7%b1%bb%e5%8f%98%e9%87%8f%e5%92%8c%e6%96%b9%e6%b3%95)
 - [11. 泛型](#11-%e6%b3%9b%e5%9e%8b)
@@ -67,7 +67,7 @@ tags: dart, flutter
   - [11.2 使用集合字面值](#112-%e4%bd%bf%e7%94%a8%e9%9b%86%e5%90%88%e5%ad%97%e9%9d%a2%e5%80%bc)
   - [11.3 使用带参数化类型的构造函数](#113-%e4%bd%bf%e7%94%a8%e5%b8%a6%e5%8f%82%e6%95%b0%e5%8c%96%e7%b1%bb%e5%9e%8b%e7%9a%84%e6%9e%84%e9%80%a0%e5%87%bd%e6%95%b0)
   - [11.4 泛型集合](#114-%e6%b3%9b%e5%9e%8b%e9%9b%86%e5%90%88)
-  - [11.5 限制参数化类型](#115-%e9%99%90%e5%88%b6%e5%8f%82%e6%95%b0%e5%8c%96%e7%b1%bb%e5%9e%8b)
+  - [11.5 泛型约束](#115-%e6%b3%9b%e5%9e%8b%e7%ba%a6%e6%9d%9f)
   - [11.6 使用泛型方法](#116-%e4%bd%bf%e7%94%a8%e6%b3%9b%e5%9e%8b%e6%96%b9%e6%b3%95)
 - [12. 库](#12-%e5%ba%93)
   - [12.1 使用库](#121-%e4%bd%bf%e7%94%a8%e5%ba%93)
@@ -1172,29 +1172,843 @@ switch (command) {
 开发者模式下，支持 `assert(condition, optionalMessage)` 终止程序。
 
 ## 9. 异常处理
+
+Dart 支持异常捕获机制。异常是程序运行过程中不可知的错误。如果程序没有捕获异常，抛出异常的[**isolate**](https://zhuanlan.zhihu.com/p/40069285) 会被挂起，通常情况下，isolate 和程序都会被终止。
+
+不同于 Java， Dart 的异常都是未经检查的。方法不会声明可能的异常，并且不需要去处理。
+
+Dart 提供了 *Exception*，*Error* 以及其他的子类。开发者可以自定义异常。另外，Dart 程序可以把所有非空对象作为异常抛出。
+
 ### 9.1 Throw
+
+抛出异常的例子：
+```Dart
+throw FormatException('Expected at least 1 section');
+```
+
+抛出任意非空对象作为异常：
+```Dart
+throw 'Out of llamas';
+```
+
+因为抛出异常是一个表达式，所以可以出现在任何需要表达式的位置：
+```Dart
+void distanceTo(Point point) => throw UnimplementedError();
+```
+
 ### 9.2 Catch
+
+捕获异常能停止异常的传递，给程序处理异常的能力：
+```Dart
+try {
+  breedMoreLlamas();
+} on OutOfLlamasException {
+  buyMoreLlammas();
+}
+```
+
+对于能抛出多种异常类型的代码，可以使用多个 catch 从句。
+```Dart
+try {
+  breedMoreLlamas();
+} on OutOfLlamasException {
+  // A specific exception
+  buyMoreLlamas();
+} on Exception catch (e) {
+  // Anything else that is an exception
+  print('Unknown exception: $e');
+} catch (e) {
+  // No specified type, handles all
+  print('Something really unknown: $e');
+  }
+```
+
+`catch()` 可以指定两个参数，第一个是抛出的异常，第二个是栈回溯([StackTrace](https://api.dart.dev/stable/dart-core/StackTrace-class.html))。
+```Dart
+try {
+  // ···
+} on Exception catch (e) {
+  print('Exception details:\n $e');
+} catch (e, s) {
+  print('Exception details:\n $e');
+  print('Stack trace:\n $s');
+}
+```
+
+在当前位置处理异常并继续传递，使用 `rethrow` 关键字：
+```Dart
+void misbehave() {
+  try {
+    dynamic foo = true;
+    print(foo++); // Runtime error
+  } catch (e) {
+    print('misbehave() partially handled ${e.runtimeType}.');
+    rethrow; // Allow callers to see the exception.
+  }
+}
+
+void main() {
+  try {
+    misbehave();
+  } catch (e) {
+    print('main() finished handling ${e.runtimeType}.');
+  }
+}
+```
+
 ### 9.3 Finally
+
+无论是否抛出异常，使用finally子句，确保代码运行。如果 `catch` 没有匹配到异常，该异常会在 `finally` 后继续传播：
+```Dart
+try {
+  breedMoreLlamas();
+} finally {
+  // Always clean up, even if an exception is thrown.
+  cleanLlamaStalls();
+}
+```
+
+`catch` 匹配到异常后，也会执行 `finally` 从句：
+```Dart
+try {
+  breedMoreLlamas();
+} catch (e) {
+  print('Error: $e'); // Handle the exception first.
+} finally {
+  cleanLlamaStalls(); // Then clean up.
+}
+```
+
 ## 10. 类
+
+Dart 是面向对象语言，具有类和基于 mixin 的继承。每个对象都是类的实例，每个类继承自 *Object*。基于 *mixin* 的继承意味着类只有一个超类，但是类的成员可被多个类结构重用。
+
 ### 10.1 使用类成员变量
+
+对象的成员由函数和数据组成。当一个方法被调用时，也就是调用对象的某个方法：通过对象的函数和数据获取方法。
+
+使用 `.` 引用实例变量或方法：
+```Dart
+var p = Point(2, 2);
+
+// Set the value of the instance variable y.
+p.y = 3;
+
+// Get the value of y.
+assert(p.y == 3);
+
+// Invoke distanceTo() on p.
+num distance = p.distanceTo(Point(4, 4));
+```
+
+使用 `?.` 避免调用链为 null 时产生异常：
+```Dart
+// If p is non-null, set its y value to 4.
+p?.y = 4;
+```
+
 ### 10.2 使用构造函数
+
+使用构造器构造对象。构造器命名可以是 `ClassName` 或 `ClassName.identifier`。比如：
+```Dart
+var p1 = Point(2, 2);
+var p2 = Point.fromJson({'x': 1, 'y': 2});
+```
+
+以下代码效果相同，构造器前面多一个可选的 `new` 关键字：
+```Dart
+var p1 = new Point(2, 2);
+var p2 = new Point.fromJson({'x': 1, 'y': 2});
+```
+
+部分类提供了[常量构造器](https://dart.dev/guides/language/language-tour#constant-constructors)。构造器前加 `const` 修饰，以创建编译期常量：
+```Dart
+var p = const ImmutablePoint(2, 2);
+```
+
+构造两个等价的编译期常量：
+```Dart
+var a = const ImmutablePoint(1, 1);
+var b = const ImmutablePoint(1, 1);
+
+assert(identical(a, b)); // They are the same instance!
+```
+
+如果能通过上下文推断出是常量，则可省略 `const`：
+```Dart
+// Lots of const keywords here.
+const pointAndLine = const {
+  'point': const [const ImmutablePoint(0, 0)],
+  'line': const [const ImmutablePoint(1, 10), const ImmutablePoint(-2, 11)],
+};
+
+// 可以简写为：
+// Only one const, which establishes the constant context.
+const pointAndLine = {
+  'point': [ImmutablePoint(0, 0)],
+  'line': [ImmutablePoint(1, 10), ImmutablePoint(-2, 11)],
+};
+```
+
+如果一个常量构造器超出常量上下文，并且没用 `const` 修饰，则创建一个非常量对象：
+```Dart
+var a = const ImmutablePoint(1, 1); // Creates a constant
+var b = ImmutablePoint(1, 1); // Does NOT create a constant
+
+assert(!identical(a, b)); // NOT the same instance!
+```
+
 ### 10.3 获取对象类型
+
+使用 Object `runtimeType` 属性，在运行时获取对象类型，返回 `Type` 对象：
+```Dart
+print('The type of a is ${a.runtimeType}');
+```
+以上内容介绍了如何*使用*类，下面介绍如何实现类。
+
 ### 10.4 实例变量
+
+如何声明一个实例变量：
+```Dart
+class Point {
+  num x; // Declare instance variable x, initially null.
+  num y; // Declare y, initially null.
+  num z = 0; // Declare z, initially 0.
+}
+```
+未初始化的实例变量默认为 `null`。
+
+所以实例变量隐式生成 *getter* 方法。所有实例变量（除了 final）隐式生成 *setter* 方法。
+```Dart
+class Point {
+  num x;
+  num y;
+}
+
+void main() {
+  var point = Point();
+  point.x = 4; // Use the setter method for x.
+  assert(point.x == 4); // Use the getter method for x.
+  assert(point.y == null); // Values default to null.
+}
+```
+关于实例变量的生命周期，实例变量在构造器和初始化器执行之前就已创建，如果声明实例变量的时候手动初始化了，那么初始化也在此时完成。
+
 ### 10.5 构造函数
+
+构造器写法：声明一个函数，函数名和类名相同。最常见的构造器形式就是生成构造器，会创建类的一个新实例：
+```Dart
+class Point {
+  num x, y;
+
+  Point(num x, num y) {
+    // There's a better way to do this, stay tuned.
+    this.x = x;
+    this.y = y;
+  }
+}
+```
+`this` 关键字引用当前实例。
+
+构造器的一个语法糖写法：
+```Dart
+class Point {
+  num x, y;
+
+  // Syntactic sugar for setting x and y
+  // before the constructor body runs.
+  Point(this.x, this.y);
+}
+```
+
+#### 默认构造器 <!-- omit in toc -->
+
+如果没有生命构造器，Dart 会默认生成一个构造器。此构造器没有参数，并调用父类的不带参构造器。
+
+#### 构造器不继承 <!-- omit in toc -->
+
+构造器不支持继承。
+
+#### 带名字的构造器 <!-- omit in toc -->
+
+如果需要创建多个构造器，使用带名字的构造器：
+```Dart
+class Point {
+  num x, y;
+
+  Point(this.x, this.y);
+
+  // Named constructor
+  Point.origin() {
+    x = 0;
+    y = 0;
+  }
+}
+```
+
+#### 调用非默认的父类构造器 <!-- omit in toc -->
+
+默认情况下，子类的构造器调用父类不带名字和参数的构造器，且在子类构造器的头部调用。如果使用了[初始化列表](https://dart.dev/guides/language/language-tour#initializer-list)，此操作会在父类调用前执行。三者顺序：
+1. 初始化列表
+2. 父类无参构造器
+3. 当前类无参构造器
+
+
+如果父类没有无名无参的构造器，必须手动调用父类的一个构造器。在 `:` 和函数体之间指定父类的构造器。比如：
+```Dart
+class Person {
+  String firstName;
+
+  Person.fromJson(Map data) {
+    print('in Person');
+  }
+}
+
+class Employee extends Person {
+  // Person does not have a default constructor;
+  // you must call super.fromJson(data).
+  Employee.fromJson(Map data) : super.fromJson(data) {
+    print('in Employee');
+  }
+}
+
+main() {
+  var emp = new Employee.fromJson({});
+
+  // Prints:
+  // in Person
+  // in Employee
+  if (emp is Person) {
+    // Type check
+    emp.firstName = 'Bob';
+  }
+  (emp as Person).firstName = 'Bob';
+}
+```
+
+#### 初始化列表 <!-- omit in toc -->
+
+除了调用父类构造器外，还可以在构造器函数体之前初始化实例变量。多个初始化之间用逗号分隔：
+```Dart
+Point.fromJson(Map<String, num> json) : x = json['x'], y = json['y'] {
+  print('In Point.fromJson(): ($x, $y)');
+}
+```
+
+开发模式下，初始化列表中可使用断言：
+```Dart
+Point.withAssert(this.x, this.y) : assert(x >= 0) {
+  print('In Point.withAssert(): ($x, $y)');
+}
+```
+
+设置 final 字段时，初始化列表较为便利。比如：
+```Dart
+import 'dart:math';
+
+class Point {
+  final num x;
+  final num y;
+  final num distanceFromOrigin;
+
+  Point(x, y)
+      : x = x,
+        y = y,
+        distanceFromOrigin = sqrt(x * x + y * y);
+}
+
+main() {
+  var p = new Point(2, 3);
+  print(p.distanceFromOrigin);
+}
+```
+
+#### 重定向构造器 <!-- omit in toc -->
+
+部分构造器的作用只是调用当前类的其它构造器。重定向构造器写法：
+```Dart
+class Point {
+  num x, y;
+
+  Point(this.x, this.y);
+
+  Point.alongzXAxis(num x) : this(x, 0);
+}
+```
+
+#### 常量构造器 <!-- omit in toc -->
+
+常量构造器用来表示类生成的实例不会改变。用 `const` 修饰构造器且全部实例变量使用 `final`。
+```Dart
+class ImmutablePoint {
+  static final ImmutablePoint origin = const ImmutablePoint(0, 0);
+
+  final num x, y;
+
+  const ImmutablePoint(this.x, this.y);
+}
+```
+常量构造器不一定总是创建常量。更多信息查看[文档](https://dart.dev/guides/language/language-tour#using-constructors)。
+
+#### 工厂构造器 <!-- omit in toc -->
+
+关键字 `factory` 修饰的构造器表示，此构造器不会每次都创建新的实例。比如，工厂构造器可能返回一个缓存中的实例或者子类的实例。
+
+工厂构造器写法：
+```Dart
+class Logger {
+  final String name;
+  bool mute = false;
+
+  // _cache is library-private, thanks to
+  // the _ in front of its name.
+  static final Map<String, Logger> _cache =
+      <String, Logger>{};
+
+  factory Logger(String name) {
+    if (_cache.containsKey(name)) {
+      return _cache[name];
+    } else {
+      final logger = Logger._internal(name);
+      _cache[name] = logger;
+      return logger;
+    }
+  }
+
+  Logger._internal(this.name);
+
+  void log(String msg) {
+    if (!mute) print(msg);
+  }
+}
+```
+
+调用工厂构造器同其他构造器方法一样：
+```Dart
+var logger = Logger('UI');
+logger.log('Button clicked');
+```
+
 ### 10.6 方法
+
+方法是定义在类内部的函数。
+
+#### 实例方法 <!-- omit in toc -->
+
+对象的实例方法内部可访问实例变量和 `this`。例子如下：
+```Dart
+import 'dart:math';
+
+class Point {
+  num x, y;
+
+  Point(this.x, this.y);
+
+  num distanceTo(Point other) {
+    var dx = x - other.x;
+    var dy = y - other.y;
+    return sqrt(dx * dx + dy * dy);
+  }
+}
+```
+
+#### Getters & setters <!-- omit in toc -->
+
+Getters 和 setters 是特殊的方法，能读写对象属性。实例变量默认都有 getter，通常也有 setter。也可用 `get` 和 `set` 自己实现：
+```Dart
+class Rectangle {
+  num left, top, width, height;
+
+  Rectangle(this.left, this.top, this.width, this.height);
+
+  // Define two calculated properties: right and bottom.
+  num get right => left + width;
+  set right(num value) => left = value - width;
+  num get bottom => top + height;
+  set bottom(num value) => top = value - height;
+}
+
+void main() {
+  var rect = Rectangle(3, 4, 20, 15);
+  assert(rect.left == 3);
+  rect.right = 12;
+  assert(rect.left == -8);
+}
+```
+
+#### 抽象方法 <!-- omit in toc -->
+
+实例方法，getter 和 setter 都能定义为抽象方法，当前类只定义接口，实现交由其它类。抽象方法只能定义在[抽象类](https://dart.dev/guides/language/language-tour#abstract-classes)中。
+
+定义抽象方法，用分号替代函数体：
+```Dart
+abstract class Doer {
+  void soSomething();
+}
+
+class EffectiveDoer extends Doer {
+  void soSomething() {
+
+  }
+}
+```
+
 ### 10.7 抽象类
+
+关键字 `abstract` 定义*抽象类*（不能被实例化）。抽象类多用于接口定义，实现较多的情况。定义[工厂构造器](https://dart.dev/guides/language/language-tour#factory-constructors)可实例化抽象类。
+
+抽象类通常都有抽象方法，例子如下：
+```Dart
+// This class is declared abstract and thus
+// can't be instantiated.
+abstract class AbstractContainer {
+  // Define constructors, fields, methods...
+
+  void updateChildren(); // Abstract method.
+}
+```
+
 ### 10.8 隐式接口
+
+类隐式定义了一个接口列表，包括当前类实现的所有成员变量。类 A 在不继承类 B 的情况下，实现类 B 的接口，从而调用类 B 的成员。
+
+声明类的时候用 `implements` 并提供所需的 APIs，从而实现一个或多个接口：
+```Dart
+class Person {
+  final _name;
+
+  Person(this._name);
+
+  String greet(String who) => 'Hello, $who. I am $_name';
+}
+
+class Impostor implements Person {
+  get _name => '';
+
+  String greet(String who) => 'Hi $who. Do you know who I am?';
+}
+
+String greetBob(Person person) => person.greet('Bob');
+
+void main() {
+  print(greetBob(Person('Kathy'))); // 'Hello, Bob. I am $Kathy'
+  print(geetBob(Impostor())); // 'Hi Bob. Do you know who I am?'
+}
+```
+
+一个类实现多个接口：
+```Dart
+class Point implements Comparable, Location {...}
+```
+
 ### 10.9 扩展类
-### 10.10 类型的枚举
+
+使用 `extends` 创建子类，`super` 指向父类：
+```Dart
+class Television {
+  void turnOn() {
+    _illuminateDisplay();
+    _activateIrSensor();
+  }
+  // ···
+}
+
+class SmartTelevision extends Television {
+  void turnOn() {
+    super.turnOn();
+    _bootNetworkInterface();
+    _initializeMemory();
+    _upgradeApps();
+  }
+  // ···
+}
+```
+
+#### 重写成员 <!-- omit in toc -->
+
+子类可重载实例方法、getters 和 setters。`@override` 关键字表示成员被重载：
+```Dart
+class SmartTelevision extends Television {
+  @override
+  void turnOn() {...}
+  // ···
+}
+```
+
+#### 可重载运算符 <!-- omit in toc -->
+
+下表中运算符支持重载：
+|       |       |       |       |
+| :---: | :---: | :---: | :---: |
+|  `<`  |  `+`  |  `|`  | `[]`  |
+|  `>`  |  `/`  |  `^`  | `[]=` |
+| `<=`  | `~/`  |  `&`  |  `~`  |
+| `>=`  |  `*`  | `<<`  | `==`  |
+|  `-`  |  `%`  | `>>`  |       |
+
+重载 `+`, `-` 运算符：
+```Dart
+class Vector {
+  final int x, y;
+
+  Vector(this.x, this.y);
+
+  Vector operator +(Vector v) => Vector(x + v.x, y + v.y);
+  Vector operator -(Vector v) => Vector(x - v.x, y - v.y);
+}
+
+void main() {
+  final v = Vector(2, 3);
+  final w = Vector(2, 2);
+
+  assert(v + w == Vector(4, 5));
+  assert(v - w == Vector(0, 1));
+}
+```
+
+#### noSuchMethod() <!-- omit in toc -->
+
+重载 `noSuchMethod()` 方法，及时处理调用对象不存在的实例变量和方法：
+```Dart
+class A {
+  // Unless you override noSuchMethod, using a
+  // non-existent member results in a NoSuchMethodError.
+  @override
+  void noSuchMethod(Invocation invocation) {
+    print('You tried to use a non-existent member: ' +
+        '${invocation.memberName}');
+  }
+}
+```
+
+不可调用对象未实现的方法，除非实现以下任意情况：
+* 消息接受者有静态类型 `dynamic`
+* 接收器有一个定义未实现方法的静态类型（包括抽象类型），接收器的动态类型有一个noSuchMethod（）实现，它与Object类中的实现不同。
+
+### 10.10 枚举类型
+
+枚举表示固定数量的常量值。
+
+#### 用法 <!-- omit in toc -->
+
+使用 `enum` 关键字声明枚举类型：
+```Dart
+enum Color { red, green, blue }
+```
+
+枚举值有个 `index` getter，返回该值在枚举声明中的位置，从 0 开始。第一个值为 0，第二个值为 1...
+
+使用 `values` 在运行时获取所有枚举值：
+```Dart
+List<Color> colors = Color.values;
+assert(colors[2] == Color.blue);
+```
+
+枚举在 switch case 中使用：
+```Dart
+var aColor = Color.red;
+switch (aColor) {
+  case Color.red:
+  print('red');
+  break;
+  case Color.green:
+  print('green');
+  break
+  default:
+  print(aColor);
+}
+```
+
+枚举类型的局限性：
+* 不可子类化，*mix in*，或实现
+* 不能显示实例一个枚举类型
+
 ### 10.11 类添加特性
+
+Mixins 是一种将类代码共享给其他类的功能。
+
+`with` 关键字*使用* mixin 功能。例子如下：
+```Dart
+class Musician extends Performer with Musical {
+
+}
+
+class Maestro extends Person with Musical, Aggressive, Demented {
+  Maestro(String maestroname) {
+    name = maestroName;
+    canConduct = true;
+  }
+}
+```
+
+*实现* mixin：创建一个 Object 子类，并且不声明构造器。另外，如果不想该类被当作普通的类，用 `mixin` 关键字代替 `class`。比如：
+```Dart
+mixin Musical {
+  bool canPlayPiano = false;
+  bool canCompose = false;
+  bool canConduct = false;
+
+  void entertainMe() {
+    if (canPlayPiano) {
+      print('Playing piano');
+    } else if (canConduct) {
+      print('Waving hands');
+    } else {
+      print('Humming to self');
+    }
+  }
+}
+```
+
+要指定只有某些类型可以使用mixin，使用 `on` 指定所需的超类：
+```Dart
+mixin MusicalPerformer on Musician {
+  // ... 
+}
+```
+
 ### 10.12 类变量和方法
+
+使用 `static` 关键字创建静态变量和方法。静态方法和变量都是面向类型的，实例无法访问。
+
+#### 静态方法 <!-- omit in toc -->
+
+```Dart
+class Queue {
+  static const initialCapacity = 16;
+}
+
+void main() {
+  assert(Queue.initialCapacity == 16);
+}
+```
+
+静态变量只有在使用时才会被初始化。
+
+#### 静态方法 <!-- omit in toc -->
+
+```Dart
+import 'dart:math';
+
+class Point {
+  num x, y;
+  Point(this.x, this.y);
+
+  static num distanceBetween(Point a, Point b) {
+    var dx = a.x - b.x;
+    var dy = a.y - b.y;
+    return sqrt(dx * dx + dy * dy);
+  }
+}
+
+void main() {
+  var a = Point(2, 2);
+  var b = Point(4, 4);
+  var distance = Point.distanceBetween(a, b);
+  assert(2.8 < distance && distance < 2.9);
+  print(distance);
+}
+```
+
 ## 11. 泛型
+
+数组类型声明：`List<E>`，其中 <...> 将类型标记为*泛型*，即，类型内部有个形式上的参数。通常的命名规范，泛型参数名字为单字符，如 E, T, S, K 和 V。
+
 ### 11.1 为什么使用泛型
+
+泛型要求代码是类型安全的，但是使用泛型有很多好处：
+* 正确使用泛型使代码结构更好
+* 减少重复代码
+
+声明一个只含字符串的数组：`List<String>`。
+```Dart
+var names = List<String>();
+names.addAll(['Seth', 'Kathy', 'Lars']);
+names.add(42);//编译报错
+```
+
+受益于静态分析的前提下，泛型能为多个类型共享一个接口。比如：
+```Dart
+// 缓存 Object
+abstract class ObjectCache {
+  Object getByKey(String key);
+  void setByKey(String key, Object value);
+}
+
+// 缓存 String
+abstract class StringCache {
+  String getByKey(String key);
+  void setByKey(String key, String value);
+}
+
+// 使用泛型
+abstract class Cache<T> {
+  T getByKey(String key);
+  void setByKey(String key, T value);
+}
+```
+
 ### 11.2 使用集合字面值
+
+```Dart
+var names = <String>['Seth', 'Kathy', 'Lars'];
+var uniqueNames = <String>{'Seth', 'Kathy', 'Lars'};
+var pages = <String, String>{
+  'index.html': 'Homepage',
+  'robots.txt': 'Hints for web robots',
+  'humans.txt': 'We are people, not machines'
+};
+```
+
 ### 11.3 使用带参数化类型的构造函数
+
+使用构造器时，指定一个或多个类型，类型放在 `<>` 中间。比如：
+```Dart
+var nameSet = Set<String>.from(names);
+```
+
 ### 11.4 泛型集合
-### 11.5 限制参数化类型
+
+Dart 泛型类型是*具体化的*，这意味着泛型变量在运行时携带类型信息。例子如下：
+```Dart
+var names = List<String>();
+names.addAll(['Seth', 'Kathy', 'Lars']);
+print(names is List<String>); // true
+```
+
+### 11.5 泛型约束
+
+当定义泛型，可使用 `extends` 约束泛型：
+```Dart
+class Foo<T extends SomeBaseClass> {
+  String toString() => "Instance of 'Foo<$T>'";
+}
+class Extender extends SomeBaseClass {}
+
+var someBaseClassFoo = Foo<SomeBaseClass>();
+var extenderFoo = Foo<Extender>();
+```
+
+不指定泛型参数：
+```Dart
+var foo = Foo();
+print(foo); // Instance of 'Foo<SomeBaseClass>'
+```
+
 ### 11.6 使用泛型方法
+
+Dart 支持泛型方法或函数：
+```Dart
+T first<T>(List<T> ts) {
+  T tmp = ts[0];
+  return tmp;
+}
+```
+上述代码展示了函数泛型参数可使用的位置：
+* 函数返回值
+* 函数参数
+* 内部布局变量
+
 ## 12. 库
 ### 12.1 使用库
 ### 12.2 实现库
