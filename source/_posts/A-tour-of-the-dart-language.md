@@ -1,7 +1,12 @@
 ---
-title: Dart 语言(译)
-tags: dart, flutter
+title: Dart 入门 (译)
+tags: 'dart', 'flutter'
+date: 2019-07-24 23:33:48
 ---
+
+本文列出了 Dart 语言的每个主要功能的用法，从变量和运算符到类库。本文适用于有其他编程语言经验的开发者。
+想学习更多 Dart 核心库的，请查看此[文档](https://dart.dev/guides/libraries/library-tour)。想学习更多语言细节的，请查看此[文档](https://dart.dev/guides/language/spec)。
+<!-- more -->
 
 目录
 - [1. 一段基础的 Dart 程序](#1-%e4%b8%80%e6%ae%b5%e5%9f%ba%e7%a1%80%e7%9a%84-dart-%e7%a8%8b%e5%ba%8f)
@@ -84,8 +89,6 @@ tags: dart, flutter
 - [19. 注释](#19-%e6%b3%a8%e9%87%8a)
 - [20. 小结](#20-%e5%b0%8f%e7%bb%93)
 
-本文列出了 Dart 语言的每个主要功能的用法，从变量和运算符到类库。本文适用于有其他编程语言经验的开发者。
-想学习更多 Dart 核心库的，请查看此[文档](https://dart.dev/guides/libraries/library-tour)。想学习更多语言细节的，请查看此[文档](https://dart.dev/guides/language/spec)。
 
 ## 1. 一段基础的 Dart 程序
 从以下代码片段感受下 Dart 语言的特性：
@@ -2335,3 +2338,4 @@ Dart 支持单行、多行和文档注释。
 此文档摘录了 Dart 中较为通用的特性。此外，更多新特性正在开发，尽量兼容当前代码。下一步：[language specification](https://dart.dev/guides/language/spec) 和 [Effective Dart](https://dart.dev/guides/language/effective-dart)。
 
 了解更多关于 Dart 核心库，查看 [A Tour of the Dart Libraries](https://dart.dev/guides/libraries/library-tour)。
+
