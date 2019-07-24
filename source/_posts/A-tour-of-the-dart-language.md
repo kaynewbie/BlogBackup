@@ -1,6 +1,8 @@
 ---
 title: Dart 入门 (译)
-tags: 'dart', 'flutter'
+tags: 
+- dart
+- flutter
 date: 2019-07-24 23:33:48
 ---
 
