@@ -132,7 +132,7 @@ App 执行入口，每个应用必须有。更多信息查看[文档](https://da
 
 学习 Dart 过程中，牢记以下概念：<br>
 * 任何可以存到变量中的都是对象，每个对象都是类的实例。数值、函数和 `null` 都是对象。所有对象都继承自 [Object](https://api.dart.dev/stable/dart-core/Object-class.html) 类。
-* 虽然 Dart 是强类型的，但类型声明是可选的，因为 Dart 有类型推断。上述代码中， `number` 并没有声明类型，被自动推断成 `int。可以使用[特定的动态类型](https://dart.dev/guides/language/effective-dart/design#do-annotate-with-object-instead-of-dynamic-to-indicate-any-object-is-allowed)，来声明任意类型的变量。
+* 虽然 Dart 是强类型的，但类型声明是可选的，因为 Dart 有类型推断。上述代码中， `number` 并没有声明类型，被自动推断成 `int`j。可以使用[特定的动态类型](https://dart.dev/guides/language/effective-dart/design#do-annotate-with-object-instead-of-dynamic-to-indicate-any-object-is-allowed)，来声明任意类型的变量。
 * Dart 支持泛型，比如 `List<int>` 和 `List<dynamic>`。
 * Dart 支持将函数声明在类内部（*实例方法*）和外部（*静态方法*），也支持*嵌套函数*。
 * 类似的，Dart 也支持将变量声明在类内部（*实例变量*）和外部（*静态变量*）。实例变量也叫做域(*field*)或属性(*property*)。
@@ -2073,7 +2073,7 @@ Future greet() async {
 
 多次调用 `loadLibrary()` 加载同一个库不会出错，且库只会被加载一次。
 
-使用库的懒加载时，记住几下几点：
+使用库的懒加载时，记住以下几点：
 * 懒加载的库中的常量，只有在懒加载完成后才能作为常量使用
 * 不能使用懒加载库中的类型。而应该将接口类型放到第三方库中，让目标库和当前文件共同导入第三方库
 * 开发者用 `deferred as namespace` 定义懒加载库的命名空间，Dart 在命名空间后面隐式插入 `loadLibrary()`。`loadLibrary()` 返回 *Future*。
@@ -2127,9 +2127,9 @@ await flushThenExit(exitCode);
 
 在 `await expr` 中，`expr` 的值通常是 Future，如果不是，系统会自动用 Future 包装。该 Future 对象表示一个会返回对象的 promise。`await expr` 的值就是最终返回的对象。Await 表达式会阻塞代码直到返回最终的对象。
 
-**使用 `await` 的时候报了编译错误，确保 `await` 实在异步函数中。**比如，想在 `main()` 函数中使用 `await`，那么函数体必须标记为 `async`：
+**使用 `await` 的时候报了编译错误，确保 `await` 实在异步函数中。** 比如，想在 `main()` 函数中使用 `await`，那么函数体必须标记为 `async`：
 ```Dart
-Future main() aync {
+Future main() async {
   checkVersion();
   print('In main: version is ${await lookUpVersion()}');
 }
@@ -2168,7 +2168,7 @@ await for (varOrType identifier in expression) {
 
 使用 `break` 或 `return` 停止监听流，执行命令后会跳出循环并对流取消订阅
 
-**当实现一个异步循环的时候，报编译错误，确保 `await for` 代码实在异步函数中。**比如，在 `main()` 函数中使用异步循环，将 `main()` 函数体标记为 `async`：
+**当实现一个异步循环的时候，报编译错误，确保 `await for` 代码实在异步函数中。** 比如，在 `main()` 函数中使用异步循环，将 `main()` 函数体标记为 `async`：
 ```Dart
 Future main() async {
   await for (var request in requestServer) {
