@@ -82,9 +82,6 @@ tags: dart, flutter
 - [17. 类型定义](#17-%e7%b1%bb%e5%9e%8b%e5%ae%9a%e4%b9%89)
 - [18. 元数据](#18-%e5%85%83%e6%95%b0%e6%8d%ae)
 - [19. 注释](#19-%e6%b3%a8%e9%87%8a)
-  - [19.1 单行注释](#191-%e5%8d%95%e8%a1%8c%e6%b3%a8%e9%87%8a)
-  - [19.2 多行注释](#192-%e5%a4%9a%e8%a1%8c%e6%b3%a8%e9%87%8a)
-  - [19.3 文档型注释](#193-%e6%96%87%e6%a1%a3%e5%9e%8b%e6%b3%a8%e9%87%8a)
 - [20. 小结](#20-%e5%b0%8f%e7%bb%93)
 
 本文列出了 Dart 语言的每个主要功能的用法，从变量和运算符到类库。本文适用于有其他编程语言经验的开发者。
@@ -2010,19 +2007,331 @@ T first<T>(List<T> ts) {
 * 内部布局变量
 
 ## 12. 库
+
+使用 `import` 和 `library` 指令创建模块化和可共享的代码。库不仅提供 APIs，还是私有的作用域块：下划线开头的标识符仅在库内部可见。每个 Dart 应用都是一个库，即使并不使用 `library` 指令。
+
+库可作为包(package)发布。
+
 ### 12.1 使用库
+
+使用 `import`，在一个库中指定另一个库的命名空间。
+
+举个例子，Dart 网页应用通常使用 `dart:html` 库，可以如下导入：
+```Dart
+import 'dart:html';
+```
+
+`import` 指令后面的参数是指向目标库的 URI。对于 Dart 自带的库，使用 `dart:` 作为 sheme。其他库，使用文件路径或 `package:` scheme。包管理工具提供的库使用 `package:` scheme。比如：
+```Dart
+import 'package:test/test.dart';
+```
+
+#### 指定库前缀 <!-- omit in toc -->
+
+当引入的两个库有冲突的标识符，可以为两个库指定前缀，从而避免冲突。例子如下：
+```Dart
+import 'package:lib1/lib1.dart';
+import 'package:lib2/lib2.dart' as lib2;
+
+Element element1 = Element();
+
+lib2.Element element2 = lib2.Element();
+```
+
+#### 导入库的部分接口 <!-- omit in toc -->
+
+Dart 支持导入库的部分功能，比如：
+```Dart
+import 'package:lib1/lib1.dart' show foo;
+
+import 'package:lib2/lib2.dart' hide foo;
+```
+
+#### 库懒加载 <!-- omit in toc -->
+
+库的按需加载。以下场景可以使用库按需加载：
+* 加快应用启动时间
+* A/B test
+* 加载较少使用的库
+
+实现懒加载，首先要用 `deferred as` 导入：
+```Dart
+import 'package:greetings/hello.dart' deferred as hello;
+```
+
+需要使用的地方，用库的标识调用 `loadLibrary()`：
+```Dart
+Future greet() async {
+  await hello.loadLibrary();
+  hello.printGreeting();
+}
+```
+上述代码中，`await` 关键字会阻塞代码直到库加载完成。更多信息查看[异步操作](https://dart.dev/guides/language/language-tour#asynchrony-support)。
+
+多次调用 `loadLibrary()` 加载同一个库不会出错，且库只会被加载一次。
+
+使用库的懒加载时，记住几下几点：
+* 懒加载的库中的常量，只有在懒加载完成后才能作为常量使用
+* 不能使用懒加载库中的类型。而应该将接口类型放到第三方库中，让目标库和当前文件共同导入第三方库
+* 开发者用 `deferred as namespace` 定义懒加载库的命名空间，Dart 在命名空间后面隐式插入 `loadLibrary()`。`loadLibrary()` 返回 *Future*。
+
 ### 12.2 实现库
+
+实现一个库，请查看 [Create Library Package](https://dart.dev/guides/libraries/create-library-packages)：
+* 如何组织库的源码
+* 如何使用 `export` 指令
+* 何时使用 `part` 指令
+* 何时使用 `library` 指令
+
 ## 13. 异步
+
+Dart 库中有很多返回值为 `Future` 和 `Stream` 的函数。这些函数是异步函数：派发一个耗时任务后直接返回，并不等待任务完成。
+
+`async` 和 `await` 关键字实现异步编程，让异步任务像同步的代码顺序执行。
+
 ### 13.1 处理 Future
+
+两种方式处理 Future：
+* 使用 `async` 和 `await`
+* 使用 Future API，查看 [the library tour](https://dart.dev/guides/libraries/library-tour#future)
+
+`async` 和 `await` 使用：
+```Dart
+await lookUpVersion();
+```
+
+使用 `await` 的代码，必须要写在 *async* 函数内：
+```Dart
+Future checkVersion() async {
+  var version = await lookUpVersion();
+}
+```
+
+`try`, `catch` 和 `finally` 用于处理 `await` 代码中的错误并执行清理代码：
+```Dart
+try {
+  version = await lookUpVersion();
+} catch (e) {
+}
+```
+
+一个异步函数中，可使用多个 `await`，下述代码中，使用了三个 await 处理任务：
+```Dart
+var entrypoint = await findEntrypoint();
+var exitCode = await runExecutable(entrypoint, args);
+await flushThenExit(exitCode);
+```
+
+在 `await expr` 中，`expr` 的值通常是 Future，如果不是，系统会自动用 Future 包装。该 Future 对象表示一个会返回对象的 promise。`await expr` 的值就是最终返回的对象。Await 表达式会阻塞代码直到返回最终的对象。
+
+**使用 `await` 的时候报了编译错误，确保 `await` 实在异步函数中。**比如，想在 `main()` 函数中使用 `await`，那么函数体必须标记为 `async`：
+```Dart
+Future main() aync {
+  checkVersion();
+  print('In main: version is ${await lookUpVersion()}');
+}
+```
+
 ### 13.2 声明异步函数
+
+异步函数的函数体用 `async` 标记。
+
+为函数添加 `async` 关键字，使得函数返回 Future。如下例子：
+```Dart
+String lookUpVersion() => '1.0.0';
+
+Future<String> lookUpVersion() async => '1.0.0';
+```
+从上述代码可知，Dart 自动用 Future 包装返回值。
+
+如果函数没有实际返回值，就返回 `Future<void>`。
+
 ### 13.3 处理流
+
+两种方式从流(Stream)中获取值：
+* 用 `async` 和 *asynchronous for loop*(`await for`)
+* 使用 [Stream API](https://dart.dev/guides/libraries/library-tour#stream)
+
+异步循环格式：
+```Dart
+await for (varOrType identifier in expression) {
+
+}
+```
+上述代码中，`expression` 必须是 Stream 类型。代码执行顺序：
+1. 等待流释放一个值
+2. 变量被赋值为 (1) 释放的值，并执行循环体
+3. 重复步骤(1), (2)，直到流被关闭
+
+使用 `break` 或 `return` 停止监听流，执行命令后会跳出循环并对流取消订阅
+
+**当实现一个异步循环的时候，报编译错误，确保 `await for` 代码实在异步函数中。**比如，在 `main()` 函数中使用异步循环，将 `main()` 函数体标记为 `async`：
+```Dart
+Future main() async {
+  await for (var request in requestServer) {
+    handleRequest(request);
+  }
+}
+```
+
+更多异步编程信息，查看 [*dart:async*](https://dart.dev/guides/libraries/library-tour#dartasync---asynchronous-programming)。
+
 ## 14. 生成器
+
+用 *生成器函数* 惰性生成一些列值。Dart 自带两种生成器：
+* **Synchronous** 生成器：返回一个 [*Iterable*](https://api.dart.dev/stable/dart-core/Iterable-class.html) 对象
+* **Asynchronous** 生成器：返回一个 [*Stream*](https://api.dart.dev/stable/dart-async/Stream-class.html) 对象
+
+实现 **synchronous** 生成器函数方法：用 `sync*` 标记函数体，并用 `yield` 语句发送值：
+```Dart
+Iterable<Int> naturalTo(int n) sync* {
+  int k = 0;
+  while (k < n) {
+    yield k++;
+  }
+}
+```
+
+实现 **asynchronous** 生成器函数方法：用 `async*` 标记函数体，并用 `yield` 发送值：
+```Dart
+Stream<Int> asynchronousNaturalTo(int n) async* {
+  int k = 0;
+  while (k < n) {
+    yield k++;
+  }
+}
+```
+
+递归生成器，用 `yield*` 改进性能：
+```Dart
+Iterable<Int> naturalsDownFrom(int n) sync* {
+  if (n > 0) {
+    yield n;
+    yield* naturalsDownFrom(n - 1);
+  }
+}
+```
+
 ## 15. 可调用的类
+
+类实现 `call()` 方法后，该类的实例可以像函数一样被调用。
+
+如下例子，`WannabeFunction` 类实现了 call() 函数：
+```Dart
+class WannabeFunction {
+  call(String a, String b, String c) {
+    return '$a $b $c!';
+  }
+}
+
+main() {
+  var wf = new WannabeFunction();
+  var out = wf('Hi', 'there', 'gang');
+  print(out);
+}
+```
+
 ## 16. 独立性
+
+多数计算机包括手机都有多核 CPU。开发者通常用共享内存的线程并发执行程序，以提高 CPU 利用率。然而，共享状态的并发执行更易出错，也使得代码更加复杂。
+
+Dart 用 *isolate* 替代线程。每个 isolate 有自己的堆内存，以确保 isolates 之间不会共享状态。
+
+更多信息查看 [dart:isolate library document](https://api.dart.dev/stable/dart-isolate)。
+
 ## 17. 类型定义
+
+Dart 中，函数同字符串和数值一样都是对象。*Typedef* 或者说 *funtion-type alias* 给函数定义个名字，在其它地方使用。类型定义会保留类型信息。
+
+```Dart
+class SortedCollection {
+  Function compare;
+
+  SortedCollection(Function f) {
+    compare = f;
+  }
+}
+
+int sort(Object a, Object b) => 0;
+
+void main {
+  SortedCollection coll = SortedCollection(sort);
+  print(coll.compare is Function);
+}
+```
+
+使用类型定义后：
+```Dart
+typedef Compare = int Function(Object a, Object b);
+
+class SortedCollection {
+  Compare compare;
+
+  SortedCollection(this.compare);
+}
+
+int sort(Object a, Object b) => 0;
+
+main {
+  SortedCollection coll = SortedCollection(sort);
+  print(coll.compare is Function); // true
+  print(coll.compare is Compare); // true
+}
+```
+
+类型定义结合泛型：
+```Dart
+typedef Compare<T> = int Function(T a, Tb);
+
+int sort(int a, int b) => a - b;
+
+main {
+  print(sort is Compare<Int>);
+}
+```
+
 ## 18. 元数据
+
+元数据标注写法：`@` 开头，后跟着编译期常量或者常量构造器。
+
+Dart 中两种标注对所有代码使用: `@deprecated` 和 `override`。
+```Dart
+class Television {
+  @deprecated
+  void activate {
+
+  }
+}
+```
+
+自定义元数据标注：
+```Dart
+library todo;
+
+class Todo {
+  final String who;
+  final String what;
+
+  const Todo(this.who, this.what);
+}
+```
+使用自定义的元数据：
+```Dart
+import 'todo.dart';
+
+@Todo('seth', 'make this do something')
+void doSomething() {
+
+}
+```
+元数据可以出现在以下指令前：库，类，类型定义，类型参数，构造器，工厂方法，字段，参数，变量声明，导入导出。运行时可通过 reflection 获取元数据。
+
 ## 19. 注释
-### 19.1 单行注释
-### 19.2 多行注释
-### 19.3 文档型注释
+
+Dart 支持单行、多行和文档注释。
+
 ## 20. 小结
+
+此文档摘录了 Dart 中较为通用的特性。此外，更多新特性正在开发，尽量兼容当前代码。下一步：[language specification](https://dart.dev/guides/language/spec) 和 [Effective Dart](https://dart.dev/guides/language/effective-dart)。
+
+了解更多关于 Dart 核心库，查看 [A Tour of the Dart Libraries](https://dart.dev/guides/libraries/library-tour)。
